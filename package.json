@@ -1,0 +1,13 @@
+{
+  "name": "uxaura-prototype",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:server": "npm run dev -w @uxaura/server",
+    "dev:demo": "npm run dev -w uxaura-demo",
+    "dev:dashboard": "npm run dev -w uxaura-dashboard"
+  }
+}

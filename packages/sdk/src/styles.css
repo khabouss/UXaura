@@ -1,0 +1,215 @@
+/* Fixed bottom-right stack: the "just did something" toast above the
+   "N changes on this page" pill. Stacked with flex so they can never
+   overlap each other, no matter which combination is showing. */
+.uxa-corner {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-end;
+  gap: 10px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+  color: #1c1c19;
+}
+
+.uxa-toast {
+  width: 260px;
+  background: #e9eefb;
+  border: 1px solid #3559c7;
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+}
+
+.uxa-toast span {
+  flex: 1;
+}
+
+.uxa-toast-undo {
+  background: none;
+  border: none;
+  color: #3559c7;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.uxa-toast-close {
+  background: none;
+  border: none;
+  color: #6d6d66;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.uxa-pill-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.uxa-pill {
+  background: white;
+  border: 1px solid #e0e0da;
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 12.5px;
+  color: #6d6d66;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.uxa-pill:hover {
+  color: #1c1c19;
+  border-color: #a5a59c;
+}
+
+.uxa-pill-list {
+  background: white;
+  border: 1px solid #e0e0da;
+  border-radius: 10px;
+  padding: 8px 12px;
+  width: 240px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+
+.uxa-pill-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  font-size: 13px;
+  border-bottom: 1px solid #f0f0eb;
+}
+
+.uxa-pill-row:last-child {
+  border-bottom: none;
+}
+
+.uxa-pill-row button {
+  background: none;
+  border: none;
+  color: #3559c7;
+  font-weight: 650;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0;
+}
+
+/* The trigger label — anchored to where the behavior happened, not to a
+   fixed corner. Only exists while the watcher (or the user) has something
+   worth showing. */
+.uxa-trigger {
+  position: fixed;
+  z-index: 10000;
+  width: 280px;
+  background: white;
+  border: 1px solid #3559c7;
+  border-radius: 12px;
+  padding: 12px 14px 10px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13.5px;
+  color: #1c1c19;
+  animation: uxa-pop 140ms ease-out;
+}
+
+@keyframes uxa-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.uxa-trigger-close {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: #a5a59c;
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.uxa-trigger-prompt {
+  font-weight: 650;
+  padding-right: 16px;
+  margin-bottom: 8px;
+}
+
+.uxa-trigger-thread {
+  max-height: 130px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.uxa-trigger-msg {
+  padding: 6px 9px;
+  border-radius: 8px;
+  line-height: 1.4;
+  font-size: 12.5px;
+}
+
+.uxa-trigger-msg-user {
+  align-self: flex-end;
+  background: #3559c7;
+  color: white;
+  max-width: 88%;
+}
+
+.uxa-trigger-msg-assistant {
+  align-self: flex-start;
+  background: #f4f4f1;
+  max-width: 92%;
+}
+
+.uxa-trigger-row {
+  display: flex;
+  gap: 6px;
+}
+
+.uxa-trigger-row input {
+  flex: 1;
+  border: 1px solid #e0e0da;
+  border-radius: 8px;
+  padding: 7px 9px;
+  font-size: 13px;
+  outline: none;
+}
+
+.uxa-trigger-row input:focus {
+  border-color: #3559c7;
+}
+
+.uxa-trigger-row button {
+  background: #3559c7;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  width: 32px;
+  font-size: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.uxa-trigger-row button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

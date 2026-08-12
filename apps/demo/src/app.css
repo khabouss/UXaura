@@ -1,0 +1,297 @@
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #24241f;
+  background: #fbfbf8;
+}
+
+.site-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 14px 28px;
+  border-bottom: 1px solid #e4e2da;
+  background: white;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.site-brand {
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: -0.01em;
+}
+
+.site-nav {
+  display: flex;
+  gap: 6px;
+}
+
+.site-nav button {
+  border: none;
+  background: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  color: #55534a;
+}
+
+.site-nav button.active {
+  background: #eef0e8;
+  color: #24241f;
+  font-weight: 650;
+}
+
+.site-user {
+  margin-left: auto;
+  font-size: 12.5px;
+  color: #8a887c;
+}
+
+main {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 28px 24px 120px;
+}
+
+.promo-banner {
+  background: #2f5233;
+  color: white;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.hero-carousel {
+  background: linear-gradient(120deg, #d9c9a8, #b9a98a);
+  border-radius: 16px;
+  padding: 56px 40px;
+  margin-bottom: 28px;
+  color: #2c2a20;
+}
+
+.hero-carousel h1 {
+  font-size: 32px;
+  margin: 0 0 8px;
+  letter-spacing: -0.02em;
+}
+
+.hero-carousel p {
+  margin: 0;
+  font-size: 16px;
+  opacity: 0.85;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 28px;
+}
+
+.filters-sidebar {
+  background: white;
+  border: 1px solid #e4e2da;
+  border-radius: 12px;
+  padding: 18px;
+  align-self: start;
+}
+
+.filters-sidebar h3 {
+  margin: 0 0 10px;
+  font-size: 15px;
+}
+
+.filters-sidebar h4 {
+  margin: 16px 0 8px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #8a887c;
+}
+
+.filters-sidebar label {
+  display: block;
+  font-size: 13.5px;
+  padding: 4px 0;
+  color: #45443c;
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.product-card {
+  background: white;
+  border: 1px solid #e4e2da;
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.product-thumb {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.product-name {
+  font-size: 13.5px;
+  font-weight: 650;
+}
+
+.product-price {
+  font-size: 13px;
+  color: #8a887c;
+  margin-top: 2px;
+}
+
+/* product page */
+
+.product-main {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  margin-bottom: 40px;
+}
+
+.gallery-main {
+  aspect-ratio: 4/3;
+  background: #e3ded0;
+  border-radius: 14px;
+  margin-bottom: 10px;
+}
+
+.gallery-thumbs {
+  display: flex;
+  gap: 8px;
+}
+
+.gallery-thumb {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  background: #ded8c8;
+}
+
+.product-info h1 {
+  margin: 0 0 10px;
+  font-size: 26px;
+  letter-spacing: -0.01em;
+}
+
+.price-tag {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.product-info p {
+  color: #55534a;
+  line-height: 1.6;
+}
+
+.add-to-cart {
+  margin-top: 14px;
+  background: #24241f;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 22px;
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.related-products,
+.reviews-section {
+  margin-top: 36px;
+}
+
+.related-products h3,
+.reviews-section h3 {
+  font-size: 17px;
+  margin-bottom: 14px;
+}
+
+.related-row {
+  display: flex;
+  gap: 14px;
+}
+
+.related-card {
+  flex: 1;
+  aspect-ratio: 3/4;
+  background: #eeece3;
+  border-radius: 10px;
+}
+
+.review {
+  border-top: 1px solid #e4e2da;
+  padding: 14px 0;
+}
+
+.review p {
+  margin: 4px 0 0;
+  color: #55534a;
+}
+
+.newsletter {
+  margin-top: 40px;
+  background: #f4f1e8;
+  border-radius: 14px;
+  padding: 24px 28px;
+  max-width: 420px;
+}
+
+.newsletter h3 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.newsletter-row {
+  display: flex;
+  gap: 8px;
+}
+
+.newsletter-row input {
+  flex: 1;
+  border: 1px solid #dcd6c4;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 13.5px;
+  outline: none;
+}
+
+.newsletter-row input[aria-invalid="true"] {
+  border-color: #ad2a20;
+}
+
+.newsletter-row button {
+  background: #24241f;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.newsletter-error {
+  margin-top: 8px;
+  color: #ad2a20;
+  font-size: 12.5px;
+}
+
+.newsletter-done {
+  margin: 0;
+  color: #1c6a46;
+  font-size: 14px;
+}
