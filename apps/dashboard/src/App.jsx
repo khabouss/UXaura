@@ -107,14 +107,16 @@ function NewProjectForm({ onCreated }) {
 function ProjectDetail({ project }) {
   const [anchors, setAnchors] = useState([])
   const [reports, setReports] = useState(null)
+  const [tools, setTools] = useState([])
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(() => {
     setLoading(true)
-    Promise.all([api.listAnchors(project.id), api.getReports(project.id)])
-      .then(([a, r]) => {
+    Promise.all([api.listAnchors(project.id), api.getReports(project.id), api.listTools(project.id)])
+      .then(([a, r, t]) => {
         setAnchors(a.boundaries)
         setReports(r.counters)
+        setTools(t.tools)
       })
       .finally(() => setLoading(false))
   }, [project.id])
@@ -154,6 +156,8 @@ function ProjectDetail({ project }) {
       ))}
 
       <AddAnchorForm projectId={project.id} onAdded={load} />
+
+      <ToolsSection projectId={project.id} tools={tools} onChange={load} />
 
       {reports && (
         <footer className="page-footer">
@@ -212,6 +216,122 @@ function AddAnchorForm({ projectId, onAdded }) {
         placeholder="Description (optional)"
         value={form.description}
         onChange={(e) => setForm({ ...form, description: e.target.value })}
+      />
+      {error && <div className="inline-error">{error}</div>}
+      <div className="anchor-form-actions">
+        <button type="submit">Add</button>
+        <button type="button" className="link-btn" onClick={() => setOpen(false)}>
+          Cancel
+        </button>
+      </div>
+    </form>
+  )
+}
+
+function ToolsSection({ projectId, tools, onChange }) {
+  async function toggle(tool) {
+    await api.setToolEnabled(projectId, tool.id, !tool.enabled)
+    onChange()
+  }
+
+  return (
+    <section className="route-group">
+      <h2>Backend tools</h2>
+      <p className="row-desc" style={{ marginBottom: 12 }}>
+        Actions the AI can hand off to your own server — e.g. "apply a discount". Your endpoint does the real work; we
+        just call it and relay what it says.
+      </p>
+      <div className="rows">
+        {tools.map((t) => (
+          <div key={t.id} className={`row${!t.enabled ? ' row-locked' : ''}`}>
+            <div className="row-main">
+              <div className="row-name">{t.name}</div>
+              <div className="row-desc">{t.description}</div>
+              <div className="row-desc">
+                <code>{t.endpointUrl}</code>
+              </div>
+              <div className="row-desc">
+                secret: <code>{t.secret}</code>
+              </div>
+            </div>
+            <div className="row-toggle">
+              <button
+                type="button"
+                className={t.enabled ? 'toggle-btn active-allow' : 'toggle-btn'}
+                onClick={() => toggle(t)}
+              >
+                Enabled
+              </button>
+              <button
+                type="button"
+                className={!t.enabled ? 'toggle-btn active-protect' : 'toggle-btn'}
+                onClick={() => toggle(t)}
+              >
+                Disabled
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+      <AddToolForm projectId={projectId} onAdded={onChange} />
+    </section>
+  )
+}
+
+function AddToolForm({ projectId, onAdded }) {
+  const [open, setOpen] = useState(false)
+  const [form, setForm] = useState({ slug: '', name: '', description: '', endpointUrl: '', inputSchema: '' })
+  const [error, setError] = useState(null)
+
+  async function submit(e) {
+    e.preventDefault()
+    try {
+      await api.createTool(projectId, form)
+      setForm({ slug: '', name: '', description: '', endpointUrl: '', inputSchema: '' })
+      setOpen(false)
+      onAdded()
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  if (!open) {
+    return (
+      <button className="link-btn add-anchor-btn" onClick={() => setOpen(true)}>
+        + Add a backend tool
+      </button>
+    )
+  }
+
+  return (
+    <form className="anchor-form" onSubmit={submit}>
+      <div className="anchor-form-title">
+        Your endpoint receives a POST with {'{ tool, args, userId, route, project }'} and header
+        x-uxaura-tool-secret. Reply with {'{ message }'} (or {'{ ok: false, error }'}).
+      </div>
+      <div className="anchor-form-row">
+        <input
+          placeholder="Slug, e.g. apply_discount"
+          value={form.slug}
+          onChange={(e) => setForm({ ...form, slug: e.target.value })}
+        />
+        <input placeholder="Name shown in the dashboard" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+      </div>
+      <input
+        placeholder="Description — tells the AI when to call this"
+        value={form.description}
+        onChange={(e) => setForm({ ...form, description: e.target.value })}
+      />
+      <input
+        placeholder="Endpoint URL, e.g. https://api.yoursite.com/uxaura-tools/apply-discount"
+        value={form.endpointUrl}
+        onChange={(e) => setForm({ ...form, endpointUrl: e.target.value })}
+      />
+      <textarea
+        placeholder='Input schema (JSON), e.g. {"type":"object","properties":{"code":{"type":"string"}},"required":["code"]}'
+        value={form.inputSchema}
+        onChange={(e) => setForm({ ...form, inputSchema: e.target.value })}
+        rows={3}
       />
       {error && <div className="inline-error">{error}</div>}
       <div className="anchor-form-actions">

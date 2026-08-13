@@ -33,4 +33,8 @@ export const api = {
       body: JSON.stringify({ projectId, route, anchorId, locked, reason }),
     }),
   getReports: (projectId) => request(`/api/admin/reports?projectId=${projectId}`),
+  listTools: (projectId) => request(`/api/admin/tools?projectId=${projectId}`),
+  createTool: (projectId, tool) => request('/api/admin/tools', { method: 'POST', body: JSON.stringify({ projectId, ...tool }) }),
+  setToolEnabled: (projectId, toolId, enabled) =>
+    request(`/api/admin/tools/${toolId}/toggle`, { method: 'POST', body: JSON.stringify({ projectId, enabled }) }),
 }

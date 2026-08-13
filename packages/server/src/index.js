@@ -9,6 +9,7 @@ import { getConversation, pushConversation } from './store.js'
 import { commitProposal } from './rulebook.js'
 import { planWithMockBrain } from './mockBrain.js'
 import { planWithOpenAI } from './openaiBrain.js'
+import { listToolsForProject, findToolBySlug, createTool, setToolEnabled, invokeTool } from './tools.js'
 
 const app = express()
 app.use(express.json())
@@ -116,6 +117,40 @@ app.get('/api/admin/reports', requireOwner, async (req, res) => {
   res.json({ counters: await getCounters(projectId) })
 })
 
+// ---- Backend tools (dashboard) ----
+
+app.get('/api/admin/tools', requireOwner, async (req, res) => {
+  const { projectId } = req.query
+  if (!projectId) return res.status(400).json({ error: 'projectId is required' })
+  if (!(await isOwnedBy(projectId, req.ownerId))) return res.status(403).json({ error: 'not your project' })
+  res.json({ tools: await listToolsForProject(projectId) })
+})
+
+app.post('/api/admin/tools', requireOwner, async (req, res) => {
+  const { projectId, slug, name, description, endpointUrl, inputSchema } = req.body
+  if (!projectId || !slug || !name || !endpointUrl) {
+    return res.status(400).json({ error: 'projectId, slug, name and endpointUrl are required' })
+  }
+  if (!(await isOwnedBy(projectId, req.ownerId))) return res.status(403).json({ error: 'not your project' })
+  let schema
+  try {
+    schema = typeof inputSchema === 'string' ? JSON.parse(inputSchema || '{}') : inputSchema
+  } catch {
+    return res.status(400).json({ error: 'inputSchema must be valid JSON' })
+  }
+  const tool = await createTool(projectId, { slug, name, description, endpointUrl, inputSchema: schema })
+  res.json({ tool })
+})
+
+app.post('/api/admin/tools/:id/toggle', requireOwner, async (req, res) => {
+  const { projectId, enabled } = req.body
+  if (!projectId) return res.status(400).json({ error: 'projectId is required' })
+  if (!(await isOwnedBy(projectId, req.ownerId))) return res.status(403).json({ error: 'not your project' })
+  const tool = await setToolEnabled(projectId, req.params.id, enabled)
+  if (!tool) return res.status(404).json({ error: 'not found' })
+  res.json({ tool })
+})
+
 // ---- SDK-facing routes ----
 
 app.get('/api/map', resolveProject, async (req, res) => {
@@ -174,18 +209,29 @@ app.post('/api/chat', resolveProject, async (req, res) => {
   const existingRules = await getRules(projectId, userId).then((rules) =>
     rules.filter((r) => r.when.route === route && r.state === 'active')
   )
+  const tools = usingOpenAI ? await listToolsForProject(projectId, { enabledOnly: true }) : []
   const history = getConversation(projectId, userId, route)
   const userContent = clickedAnchor ? `(pointed at: ${clickedAnchor}) ${message}` : message
 
   try {
     const plan = usingOpenAI
-      ? await planWithOpenAI({ message: userContent, route, clickedAnchor, anchors, existingRules, history })
+      ? await planWithOpenAI({ message: userContent, route, clickedAnchor, anchors, existingRules, history, tools })
       : planWithMockBrain({ message, route, clickedAnchor, anchors })
 
     let payload
 
     if (plan.reply) {
       payload = { reply: plan.reply }
+    } else if (plan.toolCall) {
+      // Re-check the tool is still enabled — the owner may have flipped it
+      // off in the dashboard since this list of tools was fetched.
+      const tool = await findToolBySlug(projectId, plan.toolCall.slug)
+      if (!tool || !tool.enabled) {
+        payload = { reply: "That's not available right now.", refused: true }
+      } else {
+        const result = await invokeTool(tool, plan.toolCall.args, { userId, route, project: req.project })
+        payload = { reply: result.message, toolCall: { slug: tool.slug, ok: result.ok } }
+      }
     } else {
       const outcome = await commitProposal(projectId, userId, route, plan.proposal, message)
 

@@ -55,6 +55,27 @@ create table if not exists events (
 );
 create index if not exists events_lookup on events (project_id, created_at);
 
+-- Backend tools an owner exposes on their own server so the AI planner can
+-- take real backend actions ("apply a discount", "cancel this order") in
+-- addition to changing the page. We only ever call `endpoint_url` with the
+-- args the model filled in against `input_schema` — the owner's server does
+-- the actual work and is the one place with real authority over it.
+-- `secret` is a shared token sent as `x-uxaura-tool-secret` on every call so
+-- the owner's endpoint can verify a request genuinely came from us.
+create table if not exists tools (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references projects(id) on delete cascade,
+  slug text not null,
+  name text not null,
+  description text not null,
+  endpoint_url text not null,
+  input_schema jsonb not null default '{"type":"object","properties":{}}'::jsonb,
+  secret text unique not null default encode(gen_random_bytes(24), 'hex'),
+  enabled boolean not null default true,
+  created_at timestamptz not null default now(),
+  unique (project_id, slug)
+);
+
 -- RLS: dashboard (browser, publishable key) can only ever see rows for
 -- projects it owns. Our server (secret key) bypasses RLS entirely for
 -- tenant-scoped application-level queries — see api.js.
@@ -62,6 +83,7 @@ alter table projects enable row level security;
 alter table anchors enable row level security;
 alter table rules enable row level security;
 alter table events enable row level security;
+alter table tools enable row level security;
 
 create policy "owners manage their own projects" on projects
   for all using (owner_id = auth.uid());
@@ -74,3 +96,6 @@ create policy "owners read their own rules" on rules
 
 create policy "owners read their own events" on events
   for select using (project_id in (select id from projects where owner_id = auth.uid()));
+
+create policy "owners manage their own tools" on tools
+  for all using (project_id in (select id from projects where owner_id = auth.uid()));
