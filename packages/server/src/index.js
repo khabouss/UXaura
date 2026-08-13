@@ -11,8 +11,21 @@ import { planWithMockBrain } from './mockBrain.js'
 import { planWithOpenAI } from './openaiBrain.js'
 
 const app = express()
-app.use(cors())
 app.use(express.json())
+
+// Dashboard/admin routes are only ever called from our own dashboard, so
+// their origin is locked down. SDK routes (map/rules/chat/scan) are embedded
+// on arbitrary customer sites we can't allow-list in advance — those stay
+// open and rely on the project api_key for auth instead of CORS.
+const dashboardOrigins = (process.env.DASHBOARD_ORIGIN || 'http://localhost:5173')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean)
+const dashboardCors = cors({ origin: dashboardOrigins })
+const openCors = cors()
+
+app.use(['/api/projects', '/api/admin'], dashboardCors)
+app.use(['/api/health', '/api/map', '/api/scan', '/api/rules', '/api/chat'], openCors)
 
 const usingOpenAI = Boolean(process.env.OPENAI_API_KEY)
 console.log(
