@@ -1,12 +1,14 @@
 import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
-import { anchorsForRoute, MAP } from './map.js'
-import { getRules, setRuleState, findRule, getCounters, getConversation, pushConversation } from './store.js'
+import { supabaseAdmin } from './db.js'
+import { getProjectByApiKey, getProjectById, getProjectsByOwner, isOwnedBy, createProject } from './projects.js'
+import { listAnchorsForRoute, listAllAnchors, createAnchor, setBoundary } from './anchors.js'
+import { getRules, setRuleState, findRule, getCounters } from './rules.js'
+import { getConversation, pushConversation } from './store.js'
 import { commitProposal } from './rulebook.js'
 import { planWithMockBrain } from './mockBrain.js'
 import { planWithOpenAI } from './openaiBrain.js'
-import { listBoundaries, setBoundary, isLocked, lockReason } from './boundaries.js'
 
 const app = express()
 app.use(cors())
@@ -19,50 +21,128 @@ console.log(
     : '[uxaura] No OPENAI_API_KEY set — using the mock keyword brain. See packages/server/.env.example.'
 )
 
+// ---- SDK-facing auth: a project's own api_key, sent by the SDK ----
+async function resolveProject(req, res, next) {
+  const key = req.header('x-uxaura-project-key')
+  if (!key) return res.status(401).json({ error: 'x-uxaura-project-key header is required' })
+  const project = await getProjectByApiKey(key)
+  if (!project) return res.status(401).json({ error: 'unknown project key' })
+  req.project = project
+  next()
+}
+
+// ---- Dashboard-facing auth: the owner's Supabase session token ----
+async function requireOwner(req, res, next) {
+  const authHeader = req.header('authorization') || ''
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
+  if (!token) return res.status(401).json({ error: 'missing bearer token' })
+  const { data, error } = await supabaseAdmin.auth.getUser(token)
+  if (error || !data?.user) return res.status(401).json({ error: 'invalid session' })
+  req.ownerId = data.user.id
+  next()
+}
+
 app.get('/api/health', (req, res) => {
-  res.json({ ok: true, brain: usingOpenAI ? 'openai' : 'mock', counters: getCounters() })
+  res.json({ ok: true, brain: usingOpenAI ? 'openai' : 'mock' })
 })
 
-app.get('/api/map', (req, res) => {
-  res.json(MAP)
+// ---- Project management (dashboard) ----
+
+app.get('/api/projects', requireOwner, async (req, res) => {
+  res.json({ projects: await getProjectsByOwner(req.ownerId) })
 })
 
-app.get('/api/rules', (req, res) => {
+app.post('/api/projects', requireOwner, async (req, res) => {
+  const { name, slug } = req.body
+  if (!name || !slug) return res.status(400).json({ error: 'name and slug are required' })
+  try {
+    const project = await createProject(req.ownerId, name, slug)
+    res.json({ project })
+  } catch (err) {
+    if (err.code === '23505') return res.status(409).json({ error: 'that slug is already taken' })
+    console.error(err)
+    res.status(500).json({ error: 'could not create project' })
+  }
+})
+
+// ---- Anchors / Boundaries (dashboard) ----
+
+app.get('/api/admin/anchors', requireOwner, async (req, res) => {
+  const { projectId } = req.query
+  if (!projectId) return res.status(400).json({ error: 'projectId is required' })
+  if (!(await isOwnedBy(projectId, req.ownerId))) return res.status(403).json({ error: 'not your project' })
+  const anchors = await listAllAnchors(projectId)
+  res.json({ boundaries: anchors.map((a) => ({ anchorId: a.key, ...a, reason: a.lockReason })) })
+})
+
+app.post('/api/admin/anchors', requireOwner, async (req, res) => {
+  const { projectId, route, anchorKey, name, description } = req.body
+  if (!projectId || !route || !anchorKey || !name) {
+    return res.status(400).json({ error: 'projectId, route, anchorKey and name are required' })
+  }
+  if (!(await isOwnedBy(projectId, req.ownerId))) return res.status(403).json({ error: 'not your project' })
+  const anchor = await createAnchor(projectId, { route, anchorKey, name, description })
+  res.json({ anchor })
+})
+
+app.post('/api/admin/boundaries', requireOwner, async (req, res) => {
+  const { projectId, route, anchorId, locked, reason } = req.body
+  if (!projectId || !route || !anchorId) {
+    return res.status(400).json({ error: 'projectId, route and anchorId are required' })
+  }
+  if (!(await isOwnedBy(projectId, req.ownerId))) return res.status(403).json({ error: 'not your project' })
+  const updated = await setBoundary(projectId, route, anchorId, locked, reason)
+  if (!updated) return res.status(404).json({ error: 'unknown anchor' })
+  res.json({ boundary: { anchorId: updated.key, ...updated, reason: updated.lockReason } })
+})
+
+app.get('/api/admin/reports', requireOwner, async (req, res) => {
+  const { projectId } = req.query
+  if (!projectId) return res.status(400).json({ error: 'projectId is required' })
+  if (!(await isOwnedBy(projectId, req.ownerId))) return res.status(403).json({ error: 'not your project' })
+  res.json({ counters: await getCounters(projectId) })
+})
+
+// ---- SDK-facing routes ----
+
+app.get('/api/map', resolveProject, async (req, res) => {
+  const anchors = await listAllAnchors(req.project.id)
+  const routes = {}
+  for (const a of anchors) {
+    routes[a.route] ??= { anchors: [] }
+    routes[a.route].anchors.push({ id: a.key, name: a.name, description: a.description })
+  }
+  res.json({ appId: req.project.slug, buildId: req.project.id, routes })
+})
+
+app.get('/api/rules', resolveProject, async (req, res) => {
   const { userId } = req.query
   if (!userId) return res.status(400).json({ error: 'userId is required' })
-  res.json({ rules: getRules(userId) })
+  res.json({ rules: await getRules(req.project.id, userId) })
 })
 
-app.post('/api/rules/:id/toggle', (req, res) => {
+app.post('/api/rules/:id/toggle', resolveProject, async (req, res) => {
   const { userId, active } = req.body
   if (!userId) return res.status(400).json({ error: 'userId is required' })
-  const existing = findRule(userId, req.params.id)
+  const existing = await findRule(req.project.id, req.params.id)
   if (!existing) return res.status(404).json({ error: 'not found' })
-  const rule = setRuleState(userId, req.params.id, active ? 'active' : 'off')
+  const rule = await setRuleState(req.project.id, req.params.id, active ? 'active' : 'off')
   res.json({ rule })
 })
 
-app.post('/api/chat', async (req, res) => {
+app.post('/api/chat', resolveProject, async (req, res) => {
   const { userId, route, message, clickedAnchor } = req.body
   if (!userId || !route || !message) {
     return res.status(400).json({ error: 'userId, route and message are required' })
   }
 
-  // Merge in live boundary state — the planner's own view of what's locked
-  // must match what the Rulebook will actually enforce, not the Map's
-  // startup defaults, or the model ends up proposing things it can already
-  // tell the owner has since locked.
-  const anchors = anchorsForRoute(route).map((a) => ({
-    ...a,
-    locked: isLocked(a.id),
-    lockReason: isLocked(a.id) ? lockReason(a.id) : undefined,
-  }))
-  const existingRules = getRules(userId).filter((r) => r.when.route === route && r.state === 'active')
-  const history = getConversation(userId, route)
-
-  // The click gets folded into the stored message text (not just passed as
-  // a side channel) so that when this turn becomes history for the *next*
-  // request, the model can still see what was pointed at.
+  const projectId = req.project.id
+  const rawAnchors = await listAnchorsForRoute(projectId, route)
+  const anchors = rawAnchors // already {key, name, description, locked, lockReason}
+  const existingRules = await getRules(projectId, userId).then((rules) =>
+    rules.filter((r) => r.when.route === route && r.state === 'active')
+  )
+  const history = getConversation(projectId, userId, route)
   const userContent = clickedAnchor ? `(pointed at: ${clickedAnchor}) ${message}` : message
 
   try {
@@ -75,7 +155,7 @@ app.post('/api/chat', async (req, res) => {
     if (plan.reply) {
       payload = { reply: plan.reply }
     } else {
-      const outcome = commitProposal(userId, route, plan.proposal, message)
+      const outcome = await commitProposal(projectId, userId, route, plan.proposal, message)
 
       if (outcome.rule) {
         const verbs = { hide: 'hid', show: 'showed', restyle: 'changed', redirect: 'set a redirect for' }
@@ -96,29 +176,14 @@ app.post('/api/chat', async (req, res) => {
       }
     }
 
-    pushConversation(userId, route, 'user', userContent)
-    pushConversation(userId, route, 'assistant', payload.reply)
+    pushConversation(projectId, userId, route, 'user', userContent)
+    pushConversation(projectId, userId, route, 'assistant', payload.reply)
 
     return res.json(payload)
   } catch (err) {
     console.error(err)
     res.status(500).json({ reply: 'Something went wrong on my end — try again in a moment.' })
   }
-})
-
-// The owner dashboard. No auth in this prototype — a real deployment gates
-// this behind the customer's own admin login, never behind a shared secret
-// baked into a public client.
-app.get('/api/admin/boundaries', (req, res) => {
-  res.json({ boundaries: listBoundaries() })
-})
-
-app.post('/api/admin/boundaries', (req, res) => {
-  const { anchorId, locked, reason } = req.body
-  if (!anchorId) return res.status(400).json({ error: 'anchorId is required' })
-  const updated = setBoundary(anchorId, locked, reason)
-  if (!updated) return res.status(404).json({ error: 'unknown anchor' })
-  res.json({ boundary: updated })
 })
 
 const port = process.env.PORT || 4000

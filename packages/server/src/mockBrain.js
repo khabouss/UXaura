@@ -19,7 +19,7 @@ export function planWithMockBrain({ message, clickedAnchor, anchors }) {
       return name.split(' ').some((word) => word.length > 3 && text.includes(word))
     })
     if (candidates.length === 1) {
-      target = candidates[0].id
+      target = candidates[0].key
     } else if (candidates.length > 1) {
       return {
         reply: `Which one did you mean — ${candidates.map((c) => c.name).join(', ')}? You can also switch on "point at it" and click the one you mean.`,

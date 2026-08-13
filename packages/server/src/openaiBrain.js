@@ -72,8 +72,8 @@ export async function planWithOpenAI({ message, route, clickedAnchor, anchors, e
 function buildSystemPrompt({ route, clickedAnchor, anchors, existingRules, hasHistory }) {
   const anchorList = anchors
     .map((a) => {
-      if (!a.locked) return `- ${a.id}: ${a.name} — ${a.description}`
-      return `- ${a.id}: ${a.name} — ${a.description} (protected — never target this. If the user asks, decline using this exact reason, word for word: "${a.lockReason}")`
+      if (!a.locked) return `- ${a.key}: ${a.name} — ${a.description}`
+      return `- ${a.key}: ${a.name} — ${a.description} (protected — never target this. If the user asks, decline using this exact reason, word for word: "${a.lockReason}")`
     })
     .join('\n')
 

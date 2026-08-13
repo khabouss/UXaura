@@ -1,10 +1,11 @@
-// Thin fetch wrapper around the server. In the real product this would sign
-// requests with the token the host app supplies (see ARCHITECTURE-v2 Part 4).
+// Thin fetch wrapper around the server. `projectKey` is the project's own
+// api_key from the dashboard — it tells the multi-tenant server which
+// tenant's Map/Rules/Boundaries this request is for.
 
-export function createApi(baseUrl) {
+export function createApi(baseUrl, projectKey) {
   async function request(path, options) {
     const res = await fetch(`${baseUrl}${path}`, {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-uxaura-project-key': projectKey },
       ...options,
     })
     if (!res.ok) {

@@ -14,8 +14,8 @@ export function useUXaura() {
 // This is what ships in the customer's app. It never runs a model — it
 // fetches rules, applies them with the Hands, and sends questions up to the
 // server. See ARCHITECTURE-v2.html Part two.
-export function UXauraProvider({ appId, apiBaseUrl = 'http://localhost:4000', userId, route, children }) {
-  const api = useMemo(() => createApi(apiBaseUrl), [apiBaseUrl])
+export function UXauraProvider({ projectKey, apiBaseUrl = 'http://localhost:4000', userId, route, children }) {
+  const api = useMemo(() => createApi(apiBaseUrl, projectKey), [apiBaseUrl, projectKey])
   const [rules, setRules] = useState([])
   const [map, setMap] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -98,7 +98,6 @@ export function UXauraProvider({ appId, apiBaseUrl = 'http://localhost:4000', us
 
   const value = useMemo(
     () => ({
-      appId,
       rules,
       activeRulesForRoute,
       loading,
@@ -110,7 +109,7 @@ export function UXauraProvider({ appId, apiBaseUrl = 'http://localhost:4000', us
       lastEvent,
       clearLastEvent,
     }),
-    [appId, rules, activeRulesForRoute, loading, route, map, anchorName, sendMessage, toggleRule, lastEvent, clearLastEvent]
+    [rules, activeRulesForRoute, loading, route, map, anchorName, sendMessage, toggleRule, lastEvent, clearLastEvent]
   )
 
   return <UXauraContext.Provider value={value}>{children}</UXauraContext.Provider>

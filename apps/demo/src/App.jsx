@@ -45,7 +45,11 @@ export default function App() {
   ])
 
   return (
-    <UXauraProvider appId="demo" userId={userId} route={route}>
+    <UXauraProvider
+      projectKey="94a7ddc344e631ebaeaacf6a1be20bd1c497200d912c5555"
+      userId={userId}
+      route={route}
+    >
       <div className="site">
         <header className="site-header">
           <div className="site-brand">Acme Shop</div>
