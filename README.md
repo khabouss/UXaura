@@ -15,8 +15,10 @@ layout actually changes.
 - `packages/sdk` — the npm-shaped library. `UXauraProvider` is the Hands: it
   fetches rules and applies them to the page. `UXauraWatcher` is invisible by
   default and only shows something when a trigger fires, a change was just
-  made, or there's something active on the page to review. Imported by the
-  demo via a Vite alias (no publish step exists yet — see below).
+  made, or there's something active on the page to review. Published to npm
+  as [`uxaura`](https://www.npmjs.com/package/uxaura) — the demo app still
+  imports it via a Vite alias to source rather than the published build, so
+  local changes show up immediately without a publish round-trip.
 
   **Triggers are plain JS, never AI.** `createWatcher.js` is a generic event
   multiplexer with no opinion on what counts as "something happened" — it

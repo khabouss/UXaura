@@ -1,11 +1,50 @@
 {
-  "name": "@uxaura/sdk",
-  "private": true,
+  "name": "uxaura",
   "version": "0.1.0",
+  "description": "A silent, trigger-driven UX watcher and rule engine — lets your users personalize your app by asking, without touching your source code.",
   "type": "module",
-  "main": "src/index.jsx",
+  "license": "MIT",
+  "author": "",
+  "homepage": "https://github.com/khabouss/UXaura#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/khabouss/UXaura.git",
+    "directory": "packages/sdk"
+  },
+  "keywords": [
+    "react",
+    "ux",
+    "personalization",
+    "rage-click",
+    "dead-click",
+    "frustration-signals",
+    "behavior-tracking"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./styles.css": "./dist/styles.css"
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": [
+    "*.css"
+  ],
+  "scripts": {
+    "build": "tsup && cp src/styles.css dist/styles.css",
+    "prepublishOnly": "npm run build"
+  },
   "peerDependencies": {
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.1",
+    "typescript": "^7.0.2"
   }
 }
