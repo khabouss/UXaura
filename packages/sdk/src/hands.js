@@ -1,6 +1,20 @@
 // The Hands. Applies rules to the page. Decides nothing, runs no model,
-// only ever touches elements it can find by name (data-uxa-id), never by
-// position. If it can't find a target, it reports drift instead of guessing.
+// only ever touches elements it can find by name, never by position. If it
+// can't find a target, it reports drift instead of guessing.
+//
+// A name can come from three places, tried in order: an explicit
+// data-uxa-id (if you want a dedicated hook), a plain id (the common
+// case — most apps already have these for other reasons), or
+// data-testid (also usually already there). No attribute is UXaura-
+// specific unless you want one to be.
+
+export function findAnchorElement(key) {
+  return (
+    document.querySelector(`[data-uxa-id="${key}"]`) ||
+    document.getElementById(key) ||
+    document.querySelector(`[data-testid="${key}"]`)
+  )
+}
 
 const originalCssText = new WeakMap()
 let lastTouched = new Set()
@@ -12,7 +26,7 @@ export function applyRules(rules, route) {
   // Simple and correct for a prototype; a production Hands would diff
   // instead of resetting every time.
   lastTouched.forEach((anchorId) => {
-    const el = document.querySelector(`[data-uxa-id="${anchorId}"]`)
+    const el = findAnchorElement(anchorId)
     if (el) resetElement(el)
   })
   lastTouched = new Set()
@@ -27,7 +41,7 @@ export function applyRules(rules, route) {
       continue
     }
 
-    const el = document.querySelector(`[data-uxa-id="${rule.target}"]`)
+    const el = findAnchorElement(rule.target)
     if (!el) {
       missing.push(rule)
       continue

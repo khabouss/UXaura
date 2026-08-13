@@ -21,11 +21,9 @@ export function Newsletter() {
 
   return (
     <form
+      id="newsletter-form"
       className="newsletter"
-      data-uxa-id="newsletter-form"
-      data-uxa-route="/"
-      data-uxa-name="Newsletter signup"
-      data-uxa-description="10% off email capture form on the homepage"
+      aria-label="Newsletter signup"
       onSubmit={handleSubmit}
     >
       <h3>Get 10% off your first order</h3>

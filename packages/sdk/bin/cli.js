@@ -1,10 +1,18 @@
 #!/usr/bin/env node
-import { globSync } from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { scan } from './scan.js'
 
-async function main() {
+const [, , subcommand] = process.argv
+
+if (subcommand !== 'scan') {
+  console.error('Usage: uxaura scan')
+  process.exitCode = 1
+} else {
+  await runScan()
+}
+
+async function runScan() {
   const cwd = process.cwd()
   const configPath = path.join(cwd, 'uxaura.config.js')
 
@@ -12,28 +20,28 @@ async function main() {
   try {
     config = (await import(pathToFileURL(configPath).href)).default
   } catch {
-    console.error(`[uxaura-scan] No uxaura.config.js found in ${cwd}`)
-    console.error('[uxaura-scan] Expected: export default { include: ["src/**/*.jsx"] }')
+    console.error(`[uxaura] No uxaura.config.js found in ${cwd}`)
+    console.error('[uxaura] Expected: export default { routes: { "src/pages/Home.jsx": "/" } }')
     process.exitCode = 1
     return
   }
 
-  const include = config.include ?? ['src/**/*.jsx']
-  const files = include.flatMap((pattern) => [...globSync(pattern, { cwd })]).map((f) => path.join(cwd, f))
+  const routes = config.routes ?? {}
+  const routeMap = Object.fromEntries(Object.entries(routes).map(([file, route]) => [path.join(cwd, file), route]))
 
-  if (files.length === 0) {
-    console.error(`[uxaura-scan] No files matched ${JSON.stringify(include)}`)
+  if (Object.keys(routeMap).length === 0) {
+    console.error('[uxaura] uxaura.config.js has no routes configured.')
     process.exitCode = 1
     return
   }
 
-  console.log(`[uxaura-scan] Scanning ${files.length} file(s)…`)
-  const { anchors, warnings } = scan(files)
+  console.log(`[uxaura] Scanning ${Object.keys(routeMap).length} file(s)…`)
+  const { anchors, warnings } = scan(routeMap)
 
-  for (const w of warnings) console.warn(`[uxaura-scan] ⚠ ${w}`)
+  for (const w of warnings) console.warn(`[uxaura] ⚠ ${w}`)
 
   if (anchors.length === 0) {
-    console.log('[uxaura-scan] No tagged elements found — nothing to upload.')
+    console.log('[uxaura] No named elements found (id, data-testid, or data-uxa-id) — nothing to upload.')
     return
   }
 
@@ -41,7 +49,7 @@ async function main() {
   const projectKey = process.env.UXAURA_PROJECT_KEY
 
   if (!apiUrl || !projectKey) {
-    console.log(`[uxaura-scan] Found ${anchors.length} anchor(s). Set UXAURA_API_URL and UXAURA_PROJECT_KEY to upload:`)
+    console.log(`[uxaura] Found ${anchors.length} anchor(s). Set UXAURA_API_URL and UXAURA_PROJECT_KEY to upload:`)
     for (const a of anchors) console.log(`  ${a.route}  ${a.anchorKey}  — ${a.name}`)
     return
   }
@@ -56,15 +64,13 @@ async function main() {
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    console.error(`[uxaura-scan] Upload failed: ${body.error || res.status}`)
+    console.error(`[uxaura] Upload failed: ${body.error || res.status}`)
     process.exitCode = 1
     return
   }
 
   const { created, updated } = await res.json()
-  console.log(`[uxaura-scan] Done — ${created.length} new, ${updated.length} refreshed.`)
+  console.log(`[uxaura] Done — ${created.length} new, ${updated.length} refreshed.`)
   if (created.length) console.log(`  new: ${created.join(', ')}`)
   if (updated.length) console.log(`  refreshed: ${updated.join(', ')}`)
 }
-
-main()

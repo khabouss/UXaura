@@ -16,9 +16,15 @@ export function createWatcher({ triggers = [], onTrigger } = {}) {
     return Boolean(el && el.closest && el.closest('[data-uxa-ui]'))
   }
 
+  // Deliberately narrower than Hands' own lookup: a bare `id` is too common
+  // on incidental wrapper elements to safely search *upward* for — fine as
+  // an exact target once you already know the key (see hands.js), risky as
+  // an ambient "what did they click near" heuristic. Only attributes that
+  // are specifically meant as a hook (data-uxa-id, data-testid) qualify here.
   function nearestAnchor(el) {
-    const anchorEl = el && el.closest && el.closest('[data-uxa-id]')
-    return anchorEl ? anchorEl.getAttribute('data-uxa-id') : null
+    const anchorEl = el && el.closest && el.closest('[data-uxa-id], [data-testid]')
+    if (!anchorEl) return null
+    return anchorEl.getAttribute('data-uxa-id') || anchorEl.getAttribute('data-testid')
   }
 
   // Mouse-ish events (click, mousemove, wheel) carry clientX/clientY.

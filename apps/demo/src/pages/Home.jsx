@@ -12,17 +12,17 @@ const PRODUCTS = [
 export function Home() {
   return (
     <div className="page">
-      <div data-uxa-id="promo-banner" data-uxa-route="/" className="promo-banner">
+      <div id="promo-banner" className="promo-banner">
         🎉 Summer sale — up to 40% off select items. Ends soon.
       </div>
 
-      <div data-uxa-id="hero-carousel" data-uxa-route="/" className="hero-carousel">
+      <div id="hero-carousel" className="hero-carousel">
         <h1>New arrivals for every season</h1>
         <p>Curated picks, refreshed weekly.</p>
       </div>
 
       <div className="layout">
-        <aside data-uxa-id="filters-sidebar" data-uxa-route="/" className="filters-sidebar">
+        <aside id="filters-sidebar" className="filters-sidebar">
           <h3>Filters</h3>
           <label>
             <input type="checkbox" /> In stock
@@ -52,7 +52,7 @@ export function Home() {
           </label>
         </aside>
 
-        <section data-uxa-id="product-grid" data-uxa-route="/" className="product-grid">
+        <section id="product-grid" className="product-grid">
           {PRODUCTS.map((p) => (
             <div className="product-card" key={p.name}>
               <div className="product-thumb" style={{ background: p.color }} />

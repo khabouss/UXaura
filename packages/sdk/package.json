@@ -1,6 +1,6 @@
 {
   "name": "uxaura",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A silent, trigger-driven UX watcher and rule engine — lets your users personalize your app by asking, without touching your source code.",
   "type": "module",
   "license": "MIT",
@@ -29,8 +29,12 @@
     },
     "./styles.css": "./dist/styles.css"
   },
+  "bin": {
+    "uxaura": "./bin/cli.js"
+  },
   "files": [
-    "dist"
+    "dist",
+    "bin"
   ],
   "sideEffects": [
     "*.css"
@@ -42,6 +46,10 @@
   "peerDependencies": {
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
+  },
+  "dependencies": {
+    "@babel/parser": "^7.25.0",
+    "@babel/traverse": "^7.25.0"
   },
   "devDependencies": {
     "tsup": "^8.5.1",

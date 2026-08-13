@@ -1,10 +1,15 @@
-// The Map, extracted from real source. Deliberately narrow for a first
-// pass: it doesn't infer anything about your app's structure or trace which
-// route renders which component (that's a much harder, much more fragile
-// problem) — it just reads the same convention a developer already writes
-// by hand: data-uxa-id on an element, data-uxa-route saying where it lives.
-// A component reused across routes just carries its own route (or, if the
-// dev tags it per usage site, one route per call site).
+// The Map, extracted from real source — no attribute you have to add just
+// for this. An anchor's key comes from whichever of these it already has:
+// an explicit data-uxa-id (if you want a dedicated hook), a plain id (the
+// common case — most elements worth pointing at already have one for other
+// reasons), or data-testid (also usually already there). If an element has
+// none of the three, it has no stable name to point at — that's not a
+// scanner limitation, it's the same "names, not positions" rule Hands
+// itself won't bend on.
+//
+// Route can't be inferred from an element's own markup without guessing —
+// it comes from the small file → route map in uxaura.config.js instead, so
+// nothing about the component's own code has to change at all.
 
 import { readFileSync } from 'node:fs'
 import { parse } from '@babel/parser'
@@ -14,7 +19,7 @@ const traverse = _traverse.default ?? _traverse
 
 function humanize(key) {
   return key
-    .replace(/-/g, ' ')
+    .replace(/[-_]/g, ' ')
     .replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
@@ -25,7 +30,7 @@ function getAttrValue(attributes, name) {
   return null // dynamic values ({expr}) aren't something a static scan can read
 }
 
-export function scanFile(filePath) {
+export function scanFile(filePath, route) {
   const code = readFileSync(filePath, 'utf8')
   const anchors = []
   const warnings = []
@@ -41,17 +46,14 @@ export function scanFile(filePath) {
   traverse(ast, {
     JSXOpeningElement(path) {
       const attributes = path.node.attributes
-      const anchorKey = getAttrValue(attributes, 'data-uxa-id')
+      const anchorKey =
+        getAttrValue(attributes, 'data-uxa-id') ||
+        getAttrValue(attributes, 'id') ||
+        getAttrValue(attributes, 'data-testid')
       if (!anchorKey) return
 
-      const route = getAttrValue(attributes, 'data-uxa-route')
-      if (!route) {
-        warnings.push(`${filePath}: "${anchorKey}" has data-uxa-id but no data-uxa-route — skipped`)
-        return
-      }
-
-      const name = getAttrValue(attributes, 'data-uxa-name') || humanize(anchorKey)
-      const description = getAttrValue(attributes, 'data-uxa-description') || ''
+      const name = getAttrValue(attributes, 'aria-label') || getAttrValue(attributes, 'data-uxa-name') || humanize(anchorKey)
+      const description = getAttrValue(attributes, 'data-uxa-description') || getAttrValue(attributes, 'title') || ''
 
       anchors.push({ route, anchorKey, name, description, file: filePath })
     },
@@ -60,13 +62,14 @@ export function scanFile(filePath) {
   return { anchors, warnings }
 }
 
-export function scan(filePaths) {
+// routeMap: { [absoluteFilePath]: route }
+export function scan(routeMap) {
   const anchors = []
   const warnings = []
   const seen = new Map() // `${route}:${anchorKey}` -> file, to catch collisions
 
-  for (const filePath of filePaths) {
-    const result = scanFile(filePath)
+  for (const [filePath, route] of Object.entries(routeMap)) {
+    const result = scanFile(filePath, route)
     for (const anchor of result.anchors) {
       const dupeKey = `${anchor.route}:${anchor.anchorKey}`
       if (seen.has(dupeKey)) {

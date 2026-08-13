@@ -37,7 +37,8 @@ function App() {
 
 `projectKey` identifies which tenant's Map/Rules/Boundaries this app talks
 to — generate one from the dashboard's project screen. `UXauraProvider`
-fetches and applies rules to elements tagged with `data-uxa-id`.
+fetches and applies rules to elements by name — an `id`, a `data-testid`,
+or a `data-uxa-id` if you want a dedicated hook; whichever you already have.
 `UXauraWatcher` is invisible until a trigger fires, a change was just made,
 or there's something active on the page to review.
 
@@ -47,6 +48,36 @@ they expect a multi-tenant server implementing `/api/map`, `/api/rules`,
 the `x-uxaura-project-key` header this SDK sends on every request. See the
 [full project](https://github.com/khabouss/UXaura) for the reference server
 and the owner dashboard.
+
+## Finding what's on your page
+
+`uxaura` installs a CLI too — no second package. It reads your app's own
+JSX for elements that already have an `id`, `data-testid`, or `data-uxa-id`,
+and uploads them as your project's Map. Nothing to add to your components.
+
+Add a `uxaura.config.js` next to your `package.json`, mapping each file you
+want scanned to the route it's rendered on:
+
+```js
+export default {
+  routes: {
+    'src/pages/Home.jsx': '/',
+    'src/pages/Product.jsx': '/product',
+  },
+}
+```
+
+Then run:
+
+```bash
+UXAURA_API_URL=https://your-server.example.com \
+UXAURA_PROJECT_KEY=your-project-key \
+npx uxaura scan
+```
+
+Without the env vars it just prints what it found — safe to run locally to
+check first. A re-scan only adds or refreshes names; it never deletes an
+anchor and never touches a lock an owner has already set in the dashboard.
 
 ## Built-in triggers
 
