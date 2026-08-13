@@ -46,6 +46,7 @@ export default function App() {
 
   return (
     <UXauraProvider
+      apiBaseUrl="https://server-production-273d.up.railway.app"
       projectKey="94a7ddc344e631ebaeaacf6a1be20bd1c497200d912c5555"
       userId={userId}
       route={route}
