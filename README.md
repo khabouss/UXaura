@@ -7,11 +7,17 @@ layout actually changes.
 
 ## What's here
 
-- `packages/server` — Express API. Holds the Map (dummy, hand-written), the
-  Boundaries (owner-editable, live), and everyone's Rules (in memory), plus a
-  short conversation memory per user per page. Plans rules with OpenAI
-  function calling if `OPENAI_API_KEY` is set; otherwise falls back to a
-  small keyword matcher so the whole thing runs with zero setup.
+- `packages/server` — Express API, multi-tenant, Postgres-backed (Supabase).
+  Every project gets its own Map, Boundaries, and Rules, isolated by a
+  project API key for SDK requests and a Supabase-verified owner session for
+  dashboard requests. Conversation memory stays in-memory (deliberately —
+  it's short-lived by design). Plans rules with OpenAI function calling if
+  `OPENAI_API_KEY` is set; otherwise falls back to a small keyword matcher.
+- `packages/scanner` — reads a real app's own source for elements already
+  tagged `data-uxa-id`/`data-uxa-route` and uploads them as the project's
+  Map. Never deletes an anchor and never touches an owner's lock on re-scan.
+  Run via `npx uxaura-scan` from the app's root once `uxaura.config.js`
+  exists (see `apps/demo/uxaura.config.js` for a real example).
 - `packages/sdk` — the npm-shaped library. `UXauraProvider` is the Hands: it
   fetches rules and applies them to the page. `UXauraWatcher` is invisible by
   default and only shows something when a trigger fires, a change was just
@@ -108,7 +114,5 @@ by click), plan, check against live boundaries, apply, undo, drift-safe
 lookup by name not position, and an owner can change what's allowed without
 a redeploy.
 
-Doesn't attempt yet: the real build-time scanner (anchors are hand-tagged
-here), server-pushed sync across tabs, screen-size conditions, or
-persistence beyond the server process's memory — restarting the server
-resets both the Rules and the Boundaries to their defaults.
+Doesn't attempt yet: server-pushed sync across tabs, screen-size conditions,
+CORS restrictions on the server (wide open right now), or rate limiting.

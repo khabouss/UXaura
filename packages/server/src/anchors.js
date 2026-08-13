@@ -52,6 +52,21 @@ export async function createAnchor(projectId, { route, anchorKey, name, descript
   return toDTO(rows[0])
 }
 
+// Bulk upsert from a scan. Never touches locked/lockReason on an existing
+// anchor — a re-scan must not silently reopen something the owner
+// protected. Anchors that exist in the DB but weren't in this scan are left
+// alone too; a scan only ever adds or refreshes names, never deletes.
+export async function bulkUpsertAnchors(projectId, anchors) {
+  const created = []
+  const updated = []
+  for (const a of anchors) {
+    const existing = await findAnchor(projectId, a.route, a.anchorKey)
+    const saved = await createAnchor(projectId, a)
+    ;(existing ? updated : created).push(saved)
+  }
+  return { created, updated }
+}
+
 export async function setBoundary(projectId, route, anchorKey, locked, reason) {
   const { rows } = await query(
     `update anchors set locked = $1, lock_reason = $2

@@ -3,7 +3,7 @@ import express from 'express'
 import cors from 'cors'
 import { supabaseAdmin } from './db.js'
 import { getProjectByApiKey, getProjectById, getProjectsByOwner, isOwnedBy, createProject } from './projects.js'
-import { listAnchorsForRoute, listAllAnchors, createAnchor, setBoundary } from './anchors.js'
+import { listAnchorsForRoute, listAllAnchors, createAnchor, setBoundary, bulkUpsertAnchors } from './anchors.js'
 import { getRules, setRuleState, findRule, getCounters } from './rules.js'
 import { getConversation, pushConversation } from './store.js'
 import { commitProposal } from './rulebook.js'
@@ -113,6 +113,25 @@ app.get('/api/map', resolveProject, async (req, res) => {
     routes[a.route].anchors.push({ id: a.key, name: a.name, description: a.description })
   }
   res.json({ appId: req.project.slug, buildId: req.project.id, routes })
+})
+
+// Build-time scanner upload. Same project-key auth as the SDK routes — a CI
+// job authenticates the same lightweight way the browser does, no owner
+// login needed. Never deletes or unlocks anything; only adds or refreshes
+// names/descriptions for anchors the scan actually found.
+app.post('/api/scan', resolveProject, async (req, res) => {
+  const { anchors } = req.body
+  if (!Array.isArray(anchors)) return res.status(400).json({ error: 'anchors must be an array' })
+  for (const a of anchors) {
+    if (!a.route || !a.anchorKey || !a.name) {
+      return res.status(400).json({ error: 'each anchor needs route, anchorKey and name' })
+    }
+  }
+  const { created, updated } = await bulkUpsertAnchors(req.project.id, anchors)
+  res.json({
+    created: created.map((a) => a.key),
+    updated: updated.map((a) => a.key),
+  })
 })
 
 app.get('/api/rules', resolveProject, async (req, res) => {

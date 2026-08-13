@@ -20,7 +20,14 @@ export function Newsletter() {
   }
 
   return (
-    <form className="newsletter" data-uxa-id="newsletter-form" onSubmit={handleSubmit}>
+    <form
+      className="newsletter"
+      data-uxa-id="newsletter-form"
+      data-uxa-route="/"
+      data-uxa-name="Newsletter signup"
+      data-uxa-description="10% off email capture form on the homepage"
+      onSubmit={handleSubmit}
+    >
       <h3>Get 10% off your first order</h3>
       {done ? (
         <p className="newsletter-done">You're on the list.</p>
