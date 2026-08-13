@@ -1,6 +1,6 @@
 {
   "name": "uxaura",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A silent, trigger-driven UX watcher and rule engine — lets your users personalize your app by asking, without touching your source code.",
   "type": "module",
   "license": "MIT",

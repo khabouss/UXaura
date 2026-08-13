@@ -22,7 +22,12 @@ import 'uxaura/styles.css'
 
 function App() {
   return (
-    <UXauraProvider appId="my-app" userId={currentUser.id} route={pathname} apiBaseUrl="https://your-server.example.com">
+    <UXauraProvider
+      projectKey="your-project-key"
+      userId={currentUser.id}
+      route={pathname}
+      apiBaseUrl="https://your-server.example.com"
+    >
       <YourApp />
       <UXauraWatcher />
     </UXauraProvider>
@@ -30,13 +35,16 @@ function App() {
 }
 ```
 
-`UXauraProvider` fetches and applies rules to elements tagged with
-`data-uxa-id`. `UXauraWatcher` is invisible until a trigger fires, a change
-was just made, or there's something active on the page to review.
+`projectKey` identifies which tenant's Map/Rules/Boundaries this app talks
+to — generate one from the dashboard's project screen. `UXauraProvider`
+fetches and applies rules to elements tagged with `data-uxa-id`.
+`UXauraWatcher` is invisible until a trigger fires, a change was just made,
+or there's something active on the page to review.
 
 `UXauraProvider` and `UXauraWatcher` are the client half of a larger system —
-they expect a server implementing the `/api/rules`, `/api/chat`, and
-`/api/admin/boundaries` endpoints. See the
+they expect a multi-tenant server implementing `/api/map`, `/api/rules`,
+`/api/chat`, and the `/api/admin/*` dashboard endpoints, authenticated via
+the `x-uxaura-project-key` header this SDK sends on every request. See the
 [full project](https://github.com/khabouss/UXaura) for the reference server
 and the owner dashboard.
 
